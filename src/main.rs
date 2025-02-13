@@ -5,6 +5,7 @@
 #![reexport_test_harness_main = "test_main"]
 
 use core::panic::PanicInfo;
+use bootloader::{entry_point, BootInfo};
 
 mod serial;
 mod vga_buffer;
@@ -22,10 +23,10 @@ fn panic(info: &PanicInfo) -> ! {
     milly_os::test_panic_handler(info)
 }
 
-#[no_mangle]
-pub extern "C" fn _start() -> ! {
-    println!("Hello world{}", "!");
+entry_point!(kernel_main);
 
+fn kernel_main(_boot_info: &'static BootInfo) -> ! {
+    println!("Hello world{}", "!");
     milly_os::init();
 
     #[cfg(test)]
