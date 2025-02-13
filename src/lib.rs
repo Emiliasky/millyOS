@@ -6,11 +6,17 @@
 #![feature(abi_x86_interrupt)]
 
 use core::panic::PanicInfo;
+#[cfg(test)]
+use bootloader::{BootInfo, entry_point};
+
+extern crate alloc;
 
 pub mod serial;
 pub mod vga_buffer;
 pub mod interrupts;
 pub mod gdt;
+pub mod memory;
+pub mod allocator;
 pub mod snake_game;
 
 pub trait Testable {
@@ -66,10 +72,11 @@ pub fn init() {
     x86_64::instructions::interrupts::enable();
 }
 
-/// Entry point for `cargo test`
 #[cfg(test)]
-#[no_mangle]
-pub extern "C" fn _start() -> ! {
+entry_point!(test_kernel_main);
+
+#[cfg(test)]
+fn test_kernel_main(_boot_info: &'static BootInfo) -> ! {
     init();
     test_main();
     hlt_loop();
