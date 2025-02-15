@@ -4,7 +4,10 @@ use crate::snake_game::snake::Direction;
 use crate::snake_game::snake::Point;
 use crate::snake_game::snake::Snake;
 use crate::vga_buffer;
+use crate::vga_buffer::BUFFER_HEIGHT;
+use crate::vga_buffer::BUFFER_WIDTH;
 use nanorand::{Rng, WyRand};
+use core::time::Duration;
 
 const MAX_INTERVAL: u16 = 700;
 const MIN_INTERVAL: u16 = 200;
@@ -95,8 +98,6 @@ impl Game {
             }
         }
 
-        self.restore_ui();
-
         println!("Game Over! Your score is {}", self.score);
     }
 
@@ -113,14 +114,6 @@ impl Game {
     }
 
     fn prepare_ui(&mut self) {
-        enable_raw_mode().unwrap();
-        self.stdout
-            .execute(SetSize(self.width + 3, self.height + 3))
-            .unwrap()
-            .execute(Clear(ClearType::All))
-            .unwrap()
-            .execute(Hide)
-            .unwrap();
     }
 
     fn calculate_interval(&self) -> Duration {
@@ -130,5 +123,41 @@ impl Game {
         )
     }
 
+    fn get_command(&self, wait_for: Duration) -> Option<Command> {
 
+        None
+    }
+
+    fn wait_for_key_event(&self, wait_for: Duration) -> ! {
+        loop {}
+    }
+
+    fn has_collided_with_wall(&self) -> bool {
+        let head_point = self.snake.get_head_point();
+
+        match self.snake.get_direction() {
+            Direction::Up => head_point.y == 0,
+            Direction::Right => head_point.x == self.width - 1,
+            Direction::Down => head_point.y == self.height - 1,
+            Direction::Left => head_point.x == 0,
+        }
+    }
+
+    fn has_bitten_itself(&self) -> bool {
+        let next_head_point = self.snake.get_head_point().transform(self.snake.get_direction(), 1);
+        let mut next_body_points = self.snake.get_body_points().clone();
+        next_body_points.remove(next_body_points.len() - 1);
+        next_body_points.remove(0);
+
+        next_body_points.contains(&next_head_point)
+    }
+
+    fn render(&self) {
+        use volatile::Volatile;
+        use vga_buffer::ScreenChar;
+        use vga_buffer::{Color, ColorCode};
+
+        vga_buffer::print_buffer(core::array::from_fn::<_, BUFFER_HEIGHT, _>(|_| core::array::from_fn::<_, BUFFER_WIDTH, _>(|_| Volatile::new(ScreenChar { ascii_character: 0, color_code: ColorCode::new(Color::Red, Color::White) }))));
+        todo!()
+    }
 }

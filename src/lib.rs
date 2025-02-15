@@ -18,6 +18,7 @@ pub mod gdt;
 pub mod memory;
 pub mod allocator;
 pub mod snake_game;
+pub mod os_mode;
 
 pub trait Testable {
     fn run(&self) -> ();

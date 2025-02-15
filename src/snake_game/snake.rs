@@ -26,8 +26,8 @@ pub enum Command {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Point {
-    x: u16,
-    y: u16,
+    pub x: u16,
+    pub y: u16,
 }
 
 impl Point {

@@ -27,19 +27,19 @@ pub enum Color {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
-struct ColorCode(u8);
+pub struct ColorCode(u8);
 
 impl ColorCode {
-    fn new(foreground: Color, background: Color) -> ColorCode {
+    pub fn new(foreground: Color, background: Color) -> ColorCode {
         ColorCode((background as u8) << 4 | (foreground as u8))
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
-struct ScreenChar {
-    ascii_character: u8,
-    color_code: ColorCode,
+pub struct ScreenChar {
+    pub ascii_character: u8,
+    pub color_code: ColorCode,
 }
 
 pub const BUFFER_HEIGHT: usize = 25;
@@ -64,6 +64,10 @@ impl fmt::Write for Writer {
 }
 
 impl Writer {
+    pub fn print_buffer(&mut self, buffer: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT]) {
+        self.buffer.chars = buffer;
+    }
+
     pub fn write_byte(&mut self, byte: u8) {
         match byte {
             b'\n' => self.new_line(),
@@ -128,6 +132,14 @@ macro_rules! print {
 macro_rules! println {
     () => ($crate::print!("\n"));
     ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
+}
+
+pub fn print_buffer(buffer: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT]) {
+    use x86_64::instructions::interrupts;
+
+    interrupts::without_interrupts(|| {
+        WRITER.lock().print_buffer(buffer);
+    })
 }
 
 #[doc(hidden)]
