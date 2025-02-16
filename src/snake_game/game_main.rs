@@ -1,3 +1,4 @@
+use crate::clock::MilliSecondClock32;
 use crate::println;
 use crate::snake_game::snake::Command;
 use crate::snake_game::snake::Direction;
@@ -6,8 +7,10 @@ use crate::snake_game::snake::Snake;
 use crate::vga_buffer;
 use crate::vga_buffer::BUFFER_HEIGHT;
 use crate::vga_buffer::BUFFER_WIDTH;
-use nanorand::{Rng, WyRand};
 use core::time::Duration;
+use embedded_timers::clock::Clock;
+use embedded_timers::instant::Instant;
+use nanorand::{Rng, WyRand};
 
 const MAX_INTERVAL: u16 = 700;
 const MIN_INTERVAL: u16 = 200;
@@ -55,14 +58,16 @@ impl Game {
         self.prepare_ui();
         self.render();
 
+        let clock = MilliSecondClock32;
+
         let mut done = false;
         while !done {
             let interval = self.calculate_interval();
             let direction = self.snake.get_direction();
-            let now = Instant::now();
+            let now = clock.now();
 
-            while now.elapsed() < interval {
-                if let Some(command) = self.get_command(interval - now.elapsed()) {
+            while clock.elapsed(now) < interval {
+                if let Some(command) = self.get_command(interval - clock.elapsed(now)) {
                     match command {
                         Command::Quit => {
                             done = true;
@@ -113,8 +118,7 @@ impl Game {
         }
     }
 
-    fn prepare_ui(&mut self) {
-    }
+    fn prepare_ui(&mut self) {}
 
     fn calculate_interval(&self) -> Duration {
         let speed = MAX_SPEED - self.speed;
@@ -124,7 +128,6 @@ impl Game {
     }
 
     fn get_command(&self, wait_for: Duration) -> Option<Command> {
-
         None
     }
 
@@ -144,7 +147,10 @@ impl Game {
     }
 
     fn has_bitten_itself(&self) -> bool {
-        let next_head_point = self.snake.get_head_point().transform(self.snake.get_direction(), 1);
+        let next_head_point = self
+            .snake
+            .get_head_point()
+            .transform(self.snake.get_direction(), 1);
         let mut next_body_points = self.snake.get_body_points().clone();
         next_body_points.remove(next_body_points.len() - 1);
         next_body_points.remove(0);
@@ -153,11 +159,18 @@ impl Game {
     }
 
     fn render(&self) {
-        use volatile::Volatile;
         use vga_buffer::ScreenChar;
         use vga_buffer::{Color, ColorCode};
+        use volatile::Volatile;
 
-        vga_buffer::print_buffer(core::array::from_fn::<_, BUFFER_HEIGHT, _>(|_| core::array::from_fn::<_, BUFFER_WIDTH, _>(|_| Volatile::new(ScreenChar { ascii_character: 0, color_code: ColorCode::new(Color::Red, Color::White) }))));
+        vga_buffer::print_buffer(core::array::from_fn::<_, BUFFER_HEIGHT, _>(|_| {
+            core::array::from_fn::<_, BUFFER_WIDTH, _>(|_| {
+                Volatile::new(ScreenChar {
+                    ascii_character: 0,
+                    color_code: ColorCode::new(Color::Red, Color::White),
+                })
+            })
+        }));
         todo!()
     }
 }

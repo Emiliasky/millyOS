@@ -47,6 +47,21 @@ lazy_static! {
 
 pub fn init_idt() {
     IDT.load();
+    set_timer_speed();
+}
+
+fn set_timer_speed() {
+    use x86_64::instructions::port::Port;
+
+    let mut port = Port::new(0x43);
+
+    unsafe { port.write(0x36 as u8); }
+    port = Port::new(0x40);
+    unsafe {
+        port.write(4 as u8);
+        port.write(169 as u8);
+    }
+
 }
 
 extern "x86-interrupt" fn breakpoint_handler(stack_frame: InterruptStackFrame) {
@@ -70,7 +85,8 @@ extern "x86-interrupt" fn page_fault_handler(stack_frame: InterruptStackFrame, e
 }
 
 extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    print!(".");
+//  print!(".");
+    crate::clock::tick_handler();
     unsafe {
         PICS.lock()
             .notify_end_of_interrupt(InterruptIndex::Timer.as_u8());

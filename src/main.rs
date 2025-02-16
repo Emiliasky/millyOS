@@ -8,7 +8,7 @@ extern crate alloc;
 
 use bootloader::{entry_point, BootInfo};
 use core::panic::PanicInfo;
-use milly_os::task::{executor::Executor, Task, keyboard};
+use milly_os::task::{executor::Executor, keyboard, Task};
 use x86_64::VirtAddr;
 
 mod serial;
@@ -31,7 +31,9 @@ entry_point!(kernel_main);
 
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
     use milly_os::allocator;
+    use milly_os::clock::MilliSecondClock32;
     use milly_os::memory::{self, BootInfoFrameAllocator};
+    use embedded_timers::delay::Delay;
 
     println!("Hello world{}", "!");
     milly_os::init();

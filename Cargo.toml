@@ -13,6 +13,7 @@ pic8259 = "0.10.1"
 pc-keyboard = "0.7.0"
 nanorand = { version = "0.7.0", default-features = false, features = ["alloc", "wyrand"] }
 linked_list_allocator = "0.10.0"
+embedded-timers = "0.4.0"
 
 [dependencies.lazy_static]
 version = "1.0"
