@@ -1,17 +1,36 @@
-use linked_list_allocator::LockedHeap;
+pub mod bump;
+pub mod fixed_size_block;
+pub mod linked_list;
+
+use fixed_size_block::FixedBlockSizeAllocator;
 use x86_64::{
     structures::paging::{
-        mapper::MapToError, FrameAllocator, Mapper, Page, PageTableFlags, Size4KiB
+        mapper::MapToError, FrameAllocator, Mapper, Page, PageTableFlags, Size4KiB,
     },
     VirtAddr,
 };
 
 #[global_allocator]
-static ALLOCATOR: LockedHeap = LockedHeap::empty();
+static ALLOCATOR: Locked<FixedBlockSizeAllocator> = Locked::new(FixedBlockSizeAllocator::new());
 
 pub const HEAP_START: usize = 0x_4444_4444_0000;
 pub const HEAP_SIZE: usize = 100 * 1024;
 
+pub struct Locked<A> {
+    inner: spin::Mutex<A>,
+}
+
+impl<A> Locked<A> {
+    pub const fn new(inner: A) -> Self {
+        Locked {
+            inner: spin::Mutex::new(inner),
+        }
+    }
+
+    pub fn lock(&self) -> spin::MutexGuard<A> {
+        self.inner.lock()
+    }
+}
 
 pub fn init_heap(
     mapper: &mut impl Mapper<Size4KiB>,
@@ -30,9 +49,7 @@ pub fn init_heap(
             .allocate_frame()
             .ok_or(MapToError::FrameAllocationFailed)?;
         let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
-        unsafe {
-            mapper.map_to(page, frame, flags, frame_allocator)?.flush()
-        };
+        unsafe { mapper.map_to(page, frame, flags, frame_allocator)?.flush() };
     }
 
     unsafe {
@@ -40,4 +57,8 @@ pub fn init_heap(
     }
 
     Ok(())
+}
+
+fn align_up(addr: usize, align: usize) -> usize {
+    (addr + align - 1) & !(align - 1)
 }
